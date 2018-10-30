@@ -1,1 +1,1 @@
-# yti-bragdm-integrator
+# YTI BR-AG DataModeler Integrator

@@ -1,0 +1,9 @@
+rootProject.name = "yti-brag-dm-integrator"
+
+include 'integrator-cli'
+
+// Customise subprojects build file name & validate that it exists
+rootProject.children.each { project ->
+    project.buildFileName = "${project.name}.gradle"
+    assert project.buildFile.isFile()
+}

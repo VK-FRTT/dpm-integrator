@@ -1,0 +1,57 @@
+description = 'Stand-alone command line application for executing BR-AG DataModeler integration tasks from console'
+
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath("com.github.jengelman.gradle.plugins:shadow:${shadowPluginVersion}")
+    }
+}
+
+
+apply plugin: 'com.github.johnrengelman.shadow'
+
+
+dependencies {
+    shadowed libs.kotlinStdLib
+    shadowed libs.kotlinReflect
+    shadowed libs.joptSimple
+    shadowed libs.okHttp3
+    shadowed libs.jacksonKotlin
+    shadowed libs.jacksonJsr310
+
+
+    testCompile libs.kotlinStdLib
+    testCompile libs.kotlinStdLib
+    testCompile libs.junitJupiterApi
+    testCompile libs.junitJupiterParams
+    testCompile libs.assertjCore
+
+    testRuntimeOnly libs.junitJupiterEngine
+}
+
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'fi.vm.yti.integrator.cli.MainKt'
+    }
+}
+
+
+jar.enabled = false
+jar.dependsOn shadowJar
+
+
+shadowJar {
+    classifier = null
+    configurations = [project.configurations.shadowed]
+}
+
+
+artifacts {
+    archives shadowJar
+}
+
+

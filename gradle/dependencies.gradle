@@ -1,0 +1,35 @@
+ext {
+    versions = [
+            kotlin:             "1.2.31",
+            joptSimple:         "5.0.4",
+            jacksonKotlin:      "2.8.11.1",
+            jacksonJsr310:      "2.8.11",
+            okhttp:             "3.10.0",
+            jupiter:            "5.1.0",
+            assertj:            "3.9.0",
+            hoverflyJavaJunit5: "0.10.3",
+            mockitokotlin2:     "2.0.0-RC1"
+    ]
+
+
+    libs = [
+            kotlinStdLib:           "org.jetbrains.kotlin:kotlin-stdlib:$versions.kotlin",
+            kotlinReflect:          "org.jetbrains.kotlin:kotlin-reflect:$versions.kotlin",
+
+            joptSimple:             "net.sf.jopt-simple:jopt-simple:$versions.joptSimple",
+            jacksonKotlin:          "com.fasterxml.jackson.module:jackson-module-kotlin:$versions.jacksonKotlin",
+            jacksonJsr310:          "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$versions.jacksonJsr310",
+            okHttp3:                "com.squareup.okhttp3:okhttp:$versions.okhttp",
+
+            kotlinTest:             "org.jetbrains.kotlin:kotlin-test:$versions.kotlin",
+            kotlinTestJunit:        "org.jetbrains.kotlin:kotlin-test-junit:$versions.kotlin",
+
+            junitJupiterApi:        "org.junit.jupiter:junit-jupiter-api:$versions.jupiter",
+            junitJupiterEngine:     "org.junit.jupiter:junit-jupiter-engine:$versions.jupiter",
+            junitJupiterParams:     "org.junit.jupiter:junit-jupiter-params:$versions.jupiter",
+
+            assertjCore:            "org.assertj:assertj-core:$versions.assertj",
+            hoverflyJavaJunit5:     "io.specto:hoverfly-java-junit5:$versions.hoverflyJavaJunit5",
+            mockitokotlin2:         "com.nhaarman.mockitokotlin2:mockito-kotlin:$versions.mockitokotlin2"
+    ]
+}
