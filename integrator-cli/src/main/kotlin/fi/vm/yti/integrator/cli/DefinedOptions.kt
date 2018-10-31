@@ -6,6 +6,7 @@ import joptsimple.OptionException
 import joptsimple.OptionParser
 import joptsimple.OptionSpec
 import joptsimple.ValueConversionException
+import joptsimple.util.EnumConverter
 import joptsimple.util.PathConverter
 import java.io.PrintWriter
 import java.nio.file.Path
@@ -17,6 +18,7 @@ class DefinedOptions {
     private val cmdShowHelp: OptionSpec<Void>
     private val cmdUploadSqliteDb: OptionSpec<Path>
     private val clientProfile: OptionSpec<Path>
+    private val verbosity: OptionSpec<Verbosity>
 
     init {
         cmdShowHelp = optionParser
@@ -28,7 +30,7 @@ class DefinedOptions {
         cmdUploadSqliteDb = optionParser
             .accepts(
                 "upload-sqlite-db",
-                "upload SQLite DB to DataModeler service"
+                "upload SQLite DB to DataModeler"
             )
             .withOptionalArg()
             .withValuesConvertedBy(PathConverter())
@@ -40,6 +42,15 @@ class DefinedOptions {
             )
             .withOptionalArg()
             .withValuesConvertedBy(PathConverter())
+
+        verbosity = optionParser
+            .accepts(
+                "verbose",
+                "verbose mode [${Verbosity.INFO}, ${Verbosity.DEBUG}]"
+            )
+            .withOptionalArg()
+            .withValuesConvertedBy(VerbosityConverter())
+            .defaultsTo(Verbosity.NONE)
     }
 
     fun detectOptionsFromArgs(args: Array<String>): DetectedOptions {
@@ -56,6 +67,7 @@ class DefinedOptions {
         }
     }
 
+
     fun printHelp(outWriter: PrintWriter) {
         optionParser.formatHelpWith(FixedOrderHelpFormatter())
         optionParser.printHelpOn(outWriter)
@@ -69,11 +81,14 @@ class DefinedOptions {
         }
 
         return DetectedOptions(
-            cmdShowHelp = optionSet.has(this.cmdShowHelp),
-            cmdUploadSqliteDb = optionSet.valueOf(this.cmdUploadSqliteDb),
-            clientProfile = optionSet.valueOf(this.clientProfile)
+            cmdShowHelp = optionSet.has(cmdShowHelp),
+            cmdUploadSqliteDb = optionSet.valueOf(cmdUploadSqliteDb),
+            clientProfile = optionSet.valueOf(clientProfile),
+            verbosity = optionSet.valueOf(verbosity)
         )
     }
+
+    private class VerbosityConverter : EnumConverter<Verbosity>(Verbosity::class.java)
 
     private class FixedOrderHelpFormatter :
         BuiltinHelpFormatter(120, 4) {

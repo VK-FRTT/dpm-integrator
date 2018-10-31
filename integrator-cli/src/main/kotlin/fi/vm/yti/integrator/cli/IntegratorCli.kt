@@ -1,13 +1,11 @@
 package fi.vm.yti.integrator.cli
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import okhttp3.Interceptor
+import com.fasterxml.jackson.module.kotlin.readValue
 import okhttp3.MediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
-import okhttp3.Response
-import okio.Buffer
 import java.io.BufferedWriter
 import java.io.Closeable
 import java.io.OutputStreamWriter
@@ -48,8 +46,12 @@ class IntegratorCli(
 
             if (detectedOptions.cmdUploadSqliteDb != null) {
 
+                val profile =
+                    jacksonObjectMapper().readValue<ClientProfileInput>(detectedOptions.clientProfile!!.toUri().toURL())
+                        .toValidProfile()
+
                 val client = OkHttpClient.Builder()
-                    .addNetworkInterceptor(LoggingInterceptor())
+                    .addNetworkInterceptor(LoggingInterceptor(detectedOptions.verbosity, outWriter))
                     .build()
 
                 val mediaType = MediaType.parse("application/json")
@@ -57,9 +59,9 @@ class IntegratorCli(
                 val payload = jacksonObjectMapper().writeValueAsString(
                     mapOf(
                         "grant_type" to "password",
-                        "password" to "password",
-                        "username" to "username"
-                    )
+                        "username" to profile.userName,
+                        "password" to profile.userPassword
+                    ) as Any
                 )
 
                 val body = RequestBody.create(
@@ -67,8 +69,7 @@ class IntegratorCli(
                     payload.toByteArray(Charset.forName("UTF-8"))
                 )
 
-
-                val clientCredentials = "client_api_key:client_api_secret"
+                val clientCredentials = "${profile.clientId}:${profile.clientSecret}"
                 val clientCredentialsBase64 = Base64
                     .getEncoder()
                     .encodeToString(
@@ -80,7 +81,7 @@ class IntegratorCli(
                 val authorization = "Basic ${clientCredentialsBase64}"
 
                 val request = Request.Builder()
-                    .url("https://dmUserSsoApi/oauth/token")
+                    .url("${profile.authUrl}/oauth/token")
                     .addHeader("Authorization", authorization)
                     .post(body)
                     .build()
@@ -111,31 +112,3 @@ class IntegratorCli(
     }
 }
 
-
-internal class LoggingInterceptor : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response {
-        val request = chain.request()
-
-        val t1 = System.nanoTime()
-
-        System.out.println("Sending request ${request.url()} on ${chain.connection()}")
-        System.out.print(request.headers())
-
-        request.body()?.let { body ->
-            val buffer = Buffer().also { body.writeTo(it); it.close() }
-            System.out.println("Body:\n${buffer.snapshot().utf8()}\n\n")
-        }
-
-        val response = chain.proceed(request)
-
-        val t2 = System.nanoTime()
-        System.out.println("Received response for ${response.request().url()} in ${(t2 - t1) / 1e6}ms")
-        System.out.println(response.headers())
-
-        System.out.println("Body:\n${response.peekBody(2048).string()}\n\n")
-
-        return response
-    }
-
-
-}

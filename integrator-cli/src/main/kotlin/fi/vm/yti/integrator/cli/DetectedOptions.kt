@@ -5,7 +5,8 @@ import java.nio.file.Path
 data class DetectedOptions(
     val cmdShowHelp: Boolean,
     val cmdUploadSqliteDb: Path?,
-    val clientProfile: Path?
+    val clientProfile: Path?,
+    val verbosity: Verbosity
 ) {
 
     fun ensureSingleCommandGiven() {
