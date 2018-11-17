@@ -2,17 +2,14 @@ package fi.vm.yti.integrator.cli
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import okhttp3.MediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody
+import fi.vm.yti.integrator.dm.DataModelInfo
+import fi.vm.yti.integrator.dm.DataModelVersionInfo
 import java.io.BufferedWriter
 import java.io.Closeable
 import java.io.OutputStreamWriter
 import java.io.PrintStream
 import java.io.PrintWriter
 import java.nio.charset.Charset
-import java.util.Base64
 
 
 const val INTEGRATOR_CLI_SUCCESS = 0
@@ -45,48 +42,29 @@ class IntegratorCli(
             detectedOptions.ensureSingleCommandGiven()
 
             if (detectedOptions.cmdUploadSqliteDb != null) {
+                outWriter.println("Uploading database to BR-AG Data Modeler")
+
+                detectedOptions.ensureOptionHasValue("targetDataModel")
 
                 val profile =
                     jacksonObjectMapper().readValue<ClientProfileInput>(detectedOptions.clientProfile!!.toUri().toURL())
                         .toValidProfile()
 
-                val client = OkHttpClient.Builder()
-                    .addNetworkInterceptor(LoggingInterceptor(detectedOptions.verbosity, outWriter))
-                    .build()
+                val dmClient = DataModelerClient(profile, detectedOptions.verbosity, outWriter)
 
-                val mediaType = MediaType.parse("application/json")
+                dmClient.login(detectedOptions.username, detectedOptions.password)
+                val dataModels = dmClient.listDataModels()
+                val targetDataModelVersion = selectImportTargetByDataModelName(dataModels, detectedOptions.targetDataModel!!)
+                val taskId = dmClient.importDataModel(detectedOptions.cmdUploadSqliteDb!!, targetDataModelVersion.dataModelId)
 
-                val payload = jacksonObjectMapper().writeValueAsString(
-                    mapOf(
-                        "grant_type" to "password",
-                        "username" to profile.userName,
-                        "password" to profile.userPassword
-                    ) as Any
-                )
+                while (true) {
+                    val taskStatus = dmClient.fetchTaskStatus(taskId, targetDataModelVersion.id)
+                    if (taskStatus.taskStatus == "ERROR") {
+                        throwFail("Data model import failed.\n$taskStatus")
+                    }
 
-                val body = RequestBody.create(
-                    mediaType,
-                    payload.toByteArray(Charset.forName("UTF-8"))
-                )
-
-                val clientCredentials = "${profile.clientId}:${profile.clientSecret}"
-                val clientCredentialsBase64 = Base64
-                    .getEncoder()
-                    .encodeToString(
-                        clientCredentials.toByteArray(
-                            Charset.forName("UTF-8")
-                        )
-                    )
-
-                val authorization = "Basic ${clientCredentialsBase64}"
-
-                val request = Request.Builder()
-                    .url("${profile.authUrl}/oauth/token")
-                    .addHeader("Authorization", authorization)
-                    .post(body)
-                    .build()
-
-                val response = client.newCall(request).execute()
+                    Thread.sleep(5_000)
+                }
             }
         }
     }
@@ -109,6 +87,32 @@ class IntegratorCli(
 
             INTEGRATOR_CLI_FAIL
         }
+    }
+
+    private fun selectImportTargetByDataModelName(dataModels: List<DataModelInfo>, targetDataModelName: String): DataModelVersionInfo {
+        val matchingModels = dataModels.filter { it.name == targetDataModelName }
+
+        if (matchingModels.isEmpty()) {
+            throwFail("No matching data model found with given name: $targetDataModelName")
+        }
+
+        if (matchingModels.size >= 2) {
+            throwFail("Multiple matching data models found with given name: $targetDataModelName")
+        }
+
+        val targetModel = matchingModels.first()
+        val versions = targetModel.dataModelVersions.sortedBy { it.creationDate }
+        if (versions.isEmpty()) {
+            throwFail("Data model does not have any version: $targetDataModelName")
+        }
+
+        val targetVersion = versions.last()
+
+        if (targetModel.id != targetVersion.dataModelId) {
+            throwFail("Data model ID and version ID does not match: $targetDataModelName")
+        }
+
+        return targetVersion
     }
 }
 

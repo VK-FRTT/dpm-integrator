@@ -17,8 +17,11 @@ class DefinedOptions {
 
     private val cmdShowHelp: OptionSpec<Void>
     private val cmdUploadSqliteDb: OptionSpec<Path>
+    private val targetDataModel: OptionSpec<String>
     private val clientProfile: OptionSpec<Path>
     private val verbosity: OptionSpec<Verbosity>
+    private val username: OptionSpec<String>
+    private val password: OptionSpec<String>
 
     init {
         cmdShowHelp = optionParser
@@ -34,6 +37,13 @@ class DefinedOptions {
             )
             .withOptionalArg()
             .withValuesConvertedBy(PathConverter())
+
+        targetDataModel = optionParser
+            .accepts(
+                "targetDataModel",
+                "name identifying the target data model"
+            )
+            .withRequiredArg()
 
         clientProfile = optionParser
             .accepts(
@@ -51,6 +61,22 @@ class DefinedOptions {
             .withOptionalArg()
             .withValuesConvertedBy(VerbosityConverter())
             .defaultsTo(Verbosity.NONE)
+
+        username = optionParser
+            .accepts(
+                "username",
+                "Data Modeler username"
+            )
+            .withRequiredArg()
+            .required()
+
+        password = optionParser
+            .accepts(
+                "password",
+                "Data Modeler user password"
+            )
+            .withRequiredArg()
+            .required()
     }
 
     fun detectOptionsFromArgs(args: Array<String>): DetectedOptions {
@@ -67,7 +93,6 @@ class DefinedOptions {
         }
     }
 
-
     fun printHelp(outWriter: PrintWriter) {
         optionParser.formatHelpWith(FixedOrderHelpFormatter())
         optionParser.printHelpOn(outWriter)
@@ -83,8 +108,11 @@ class DefinedOptions {
         return DetectedOptions(
             cmdShowHelp = optionSet.has(cmdShowHelp),
             cmdUploadSqliteDb = optionSet.valueOf(cmdUploadSqliteDb),
+            targetDataModel = optionSet.valueOf(targetDataModel),
             clientProfile = optionSet.valueOf(clientProfile),
-            verbosity = optionSet.valueOf(verbosity)
+            verbosity = optionSet.valueOf(verbosity),
+            username = optionSet.valueOf(username),
+            password = optionSet.valueOf(password)
         )
     }
 

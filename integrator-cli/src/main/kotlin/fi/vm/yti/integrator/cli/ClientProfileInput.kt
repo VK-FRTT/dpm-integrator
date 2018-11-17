@@ -1,30 +1,30 @@
 package fi.vm.yti.integrator.cli
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import kotlin.reflect.KProperty0
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Suppress("MemberVisibilityCanBePrivate")
 class ClientProfileInput(
-    val userName: String?,
-    val userPassword: String?,
-
     val clientId: String?,
     val clientSecret: String?,
-
-    val authUrl: String?
+    val authApiUrl: String?,
+    val hmrApiUrl: String?,
+    val exportImportApiUrl: String?
 ) {
     fun toValidProfile(): ClientProfile {
-        validateValueNotNull(this::userName)
-        validateValueNotNull(this::userPassword)
         validateValueNotNull(this::clientId)
         validateValueNotNull(this::clientSecret)
-        validateValueNotNull(this::authUrl)
+        validateValueNotNull(this::authApiUrl)
+        validateValueNotNull(this::hmrApiUrl)
+        validateValueNotNull(this::exportImportApiUrl)
 
         return ClientProfile(
-            userName = userName!!,
-            userPassword = userPassword!!,
             clientId = clientId!!,
             clientSecret = clientSecret!!,
-            authUrl = authUrl!!
+            authApiUrl = authApiUrl!!,
+            hmrApiUrl = hmrApiUrl!!,
+            exportImportApiUrl = exportImportApiUrl!!
         )
     }
 

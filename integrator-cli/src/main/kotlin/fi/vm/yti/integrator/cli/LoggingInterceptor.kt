@@ -35,7 +35,7 @@ class LoggingInterceptor(val verbosity: Verbosity, val writer: PrintWriter) : In
 
         if (verbosity >= Verbosity.DEBUG) {
             writer.print(response.headers())
-            writer.println("`${response.peekBody(2048).string()}`")
+            writer.println("`${response.peekBody(32768).string()}`")
         }
 
         return response
