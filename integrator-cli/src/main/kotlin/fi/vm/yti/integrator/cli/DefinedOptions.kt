@@ -56,7 +56,7 @@ class DefinedOptions {
         verbosity = optionParser
             .accepts(
                 "verbose",
-                "verbose mode [${Verbosity.INFO}, ${Verbosity.DEBUG}]"
+                "verbose mode [${Verbosity.INFO}, ${Verbosity.DEBUG}, ${Verbosity.TRACE}]"
             )
             .withOptionalArg()
             .withValuesConvertedBy(VerbosityConverter())
