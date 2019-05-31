@@ -30,7 +30,6 @@ open class IntegratorCli_TestBase(val primaryCommand: String? = null) {
     fun baseTeardown() {
     }
 
-
     protected fun executeCli(args: Array<String>): ExecuteResult {
         if (primaryCommand != null) {
             assertThat(args).contains(primaryCommand)

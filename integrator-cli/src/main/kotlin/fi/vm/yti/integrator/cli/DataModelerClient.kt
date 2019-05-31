@@ -13,21 +13,27 @@ import java.io.PrintWriter
 import java.nio.charset.Charset
 import java.nio.file.Path
 import java.util.Base64
+import java.util.concurrent.TimeUnit
 
-class DataModelerClient(val profile: ClientProfile, verbosity: Verbosity, outWriter: PrintWriter) {
+class DataModelerClient(
+    clientProfilePath: Path,
+    verbosity: Verbosity,
+    outWriter: PrintWriter
+) {
 
     private val httpClient = OkHttpClient
         .Builder()
         .addNetworkInterceptor(LoggingInterceptor(verbosity, outWriter))
+        .writeTimeout(360, TimeUnit.SECONDS)
         .build()
 
     private val mapper = jacksonObjectMapper()
+    private val utf8Charset = Charset.forName("UTF-8")
+    private val profile = loadClientProfile(clientProfilePath)
     private var accessToken: String? = null
 
-    fun login(username: String, password: String) {
-        val mediaType = MediaType.parse("application/json")
-
-        val payload = jacksonObjectMapper().writeValueAsString(
+    fun authenticate(username: String, password: String) {
+        val loginPayload = mapper.writeValueAsString(
             mapOf(
                 "grant_type" to "password",
                 "username" to username,
@@ -36,20 +42,17 @@ class DataModelerClient(val profile: ClientProfile, verbosity: Verbosity, outWri
         )
 
         val body = RequestBody.create(
-            mediaType,
-            payload.toByteArray(Charset.forName("UTF-8"))
+            MediaType.parse("application/json"),
+            loginPayload.toByteArray(utf8Charset)
         )
 
-        val clientCredentials = "${profile.clientId}:${profile.clientSecret}"
         val clientCredentialsBase64 = Base64
             .getEncoder()
             .encodeToString(
-                clientCredentials.toByteArray(
-                    Charset.forName("UTF-8")
-                )
+                "${profile.clientId}:${profile.clientSecret}".toByteArray(utf8Charset)
             )
 
-        val authorization = "Basic ${clientCredentialsBase64}"
+        val authorization = "Basic $clientCredentialsBase64"
 
         val request = Request.Builder()
             .url("${profile.authApiUrl}/oauth/token")
@@ -57,82 +60,106 @@ class DataModelerClient(val profile: ClientProfile, verbosity: Verbosity, outWri
             .post(body)
             .build()
 
-        val responseText = executeAndGetResponseText(request, "Login")
-        val responseJson = mapper.readTree(responseText)
+        val result = executeAndExpectSuccess(request, "Authentication")
+
+        val responseJson = mapper.readTree(result.responseBody)
         accessToken = responseJson.get("access_token").asText()
     }
 
     fun listDataModels(): List<DataModelInfo> {
-        val modelsRequest = newAuthorizedRequestBuilder()
+        val request = authorizedRequestBuilder()
             .get()
             .url("${profile.hmrApiUrl}/model/data/")
             .build()
 
-        val responseText = executeAndGetResponseText(modelsRequest, "Get available models")
+        val result = executeAndExpectSuccess(request, "Listing data models")
 
-        return mapper.readValue(responseText)
+        return mapper.readValue(result.responseBody)
     }
 
-
-    fun importDataModel(filePath: Path, dataModelId: String): String {
-        val requestBody = MultipartBody.Builder()
+    fun uploadDatabaseAndScheduleImport(
+        sourceFilePath: Path,
+        targtDataModelId: String
+    ): String {
+        val requestBody = MultipartBody
+            .Builder()
             .setType(MultipartBody.FORM)
             .addFormDataPart(
                 "file",
-                filePath.fileName.toString(),
-                RequestBody.create(MediaType.parse("text/csv"), filePath.toFile()))
+                sourceFilePath.fileName.toString(),
+                RequestBody.create(
+                    MediaType.parse("application/octet-stream"),
+                    sourceFilePath.toFile()
+                )
+            )
             .build()
 
-        val request = newAuthorizedRequestBuilder()
+        val request = authorizedRequestBuilder()
             .post(requestBody)
             .url("${profile.exportImportApiUrl}/api/import/db/schedule")
-            .addHeader("dataModelId", dataModelId)
+            .addHeader("dataModelId", targtDataModelId)
             .build()
 
-        return executeAndGetResponseText(request, "Import database to Data Modeler")
+        val result = executeAndExpectSuccess(request, "Database upload")
+
+        return result.responseBody
     }
 
-    fun fetchTaskStatus(taskId: String, dataModelVersionId: String): TaskStatusInfo {
-        val request = newAuthorizedRequestBuilder()
+    fun fetchTaskStatus(
+        taskId: String,
+        dataModelVersionId: String
+    ): TaskStatusInfo {
+        val request = authorizedRequestBuilder()
             .get()
             .url("${profile.exportImportApiUrl}/api/task/$taskId/import")
             .addHeader("dataModelVersionId", dataModelVersionId)
             .build()
 
-        val response = httpClient.newCall(request).execute()
-        val bodyText = response.body()!!.string()
+        val result = executeAndExpectSuccess(request, "Fetch task status")
 
-        if (response.isSuccessful) {
-            return mapper.readValue(bodyText)
-        }
-
-        if (response.code() == 404) {
-            return TaskStatusInfo(
-                type = "",
-                taskId = "",
-                taskStatus = "UNAVAILABLE",
-                taskType = "",
-                resultDataModelId = "",
-                sourceDBFileName = ""
-            )
-        }
-
-        throwFail("Get task details failed. $bodyText")
+        return mapper.readValue(result.responseBody)
     }
 
-    private fun newAuthorizedRequestBuilder(): Request.Builder {
+    private fun loadClientProfile(clientProfilePath: Path): ClientProfile {
+        val input = mapper.readValue<ClientProfileInput>(clientProfilePath.toUri().toURL())
+        return input.toValidProfile()
+    }
+
+    private fun authorizedRequestBuilder(): Request.Builder {
+        requireNotNull(accessToken)
+
         return Request.Builder()
             .addHeader("Accept", "application/json")
-            .addHeader("Authorization", "Bearer ${accessToken}")
+            .addHeader("Authorization", "Bearer $accessToken")
     }
 
-    private fun executeAndGetResponseText(request: Request, reqDescription: String): String {
-        val response = httpClient.newCall(request).execute()
-        val bodyText = response.body()!!.string()
-        if (!response.isSuccessful) {
-            throwFail("$reqDescription failed. $bodyText")
+    private fun execute(request: Request): HttpRequestResult {
+        val response = try {
+            httpClient.newCall(request).execute()
+        } catch (e: java.net.UnknownHostException) {
+            throwFail("Could not determine the server IP address. Url: ${request.url()}")
+        } catch (e: java.net.ConnectException) {
+            throwFail("Could not connect the server. Url: ${request.url()}")
+        } catch (e: java.net.SocketTimeoutException) {
+            throwFail("The server communication timeout. ${request.url()}")
         }
 
-        return bodyText
+        return HttpRequestResult(
+            statusCode = response.code(),
+            statusMessage = response.message(),
+            responseBody = response.body().use {
+                it?.string() ?: ""
+            }
+        )
+    }
+
+    private fun executeAndExpectSuccess(request: Request, requestName: String): HttpRequestResult {
+        val result = execute(request)
+
+        if (!result.isSuccessful()) {
+            throwFail("$requestName failed. HTTP status: ${result.statusCode}. Response body: ${result.responseBody}")
+        }
+
+        return result
     }
 }

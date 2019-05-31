@@ -16,7 +16,7 @@ class DefinedOptions {
     private val optionParser = OptionParser()
 
     private val cmdShowHelp: OptionSpec<Void>
-    private val cmdUploadSqliteDb: OptionSpec<Path>
+    private val cmdUploadDatabase: OptionSpec<Path>
     private val targetDataModel: OptionSpec<String>
     private val clientProfile: OptionSpec<Path>
     private val verbosity: OptionSpec<Verbosity>
@@ -30,18 +30,18 @@ class DefinedOptions {
                 "show this help message"
             ).forHelp()
 
-        cmdUploadSqliteDb = optionParser
+        cmdUploadDatabase = optionParser
             .accepts(
-                "upload-sqlite-db",
-                "upload SQLite DB to DataModeler"
+                "upload-database",
+                "upload SQL Database to DataModeler"
             )
             .withOptionalArg()
             .withValuesConvertedBy(PathConverter())
 
         targetDataModel = optionParser
             .accepts(
-                "targetDataModel",
-                "name identifying the target data model"
+                "target-data-model",
+                "target data model name"
             )
             .withRequiredArg()
 
@@ -107,8 +107,8 @@ class DefinedOptions {
 
         return DetectedOptions(
             cmdShowHelp = optionSet.has(cmdShowHelp),
-            cmdUploadSqliteDb = optionSet.valueOf(cmdUploadSqliteDb),
-            targetDataModel = optionSet.valueOf(targetDataModel),
+            cmdUploadDatabase = optionSet.valueOf(cmdUploadDatabase),
+            targetDataModelName = optionSet.valueOf(targetDataModel),
             clientProfile = optionSet.valueOf(clientProfile),
             verbosity = optionSet.valueOf(verbosity),
             username = optionSet.valueOf(username),
