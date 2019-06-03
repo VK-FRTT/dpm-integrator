@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
 
 open class IntegratorCli_TestBase(val primaryCommand: String? = null) {
 
@@ -17,6 +18,10 @@ open class IntegratorCli_TestBase(val primaryCommand: String? = null) {
 
     @BeforeEach
     fun baseInit() {
+
+        charset = StandardCharsets.UTF_8
+        outCollector = PrintStreamCollector(charset)
+        errCollector = PrintStreamCollector(charset)
 
         cli = IntegratorCli(
             outStream = outCollector.printStream(),
@@ -47,6 +52,26 @@ open class IntegratorCli_TestBase(val primaryCommand: String? = null) {
         //println("ERR >>>\n${result.errText}\n<<< ERR")
 
         return result
+    }
+
+    protected fun executeCliAndExpectSuccess(args: Array<String>, verifier: (String) -> Unit) {
+        val result = executeCli(args)
+
+        assertThat(result.errText).isBlank()
+
+        verifier(result.outText)
+
+        assertThat(result.status).isEqualTo(INTEGRATOR_CLI_SUCCESS)
+    }
+
+    protected fun executeCliAndExpectFail(args: Array<String>, verifier: (String, String) -> Unit) {
+        val result = executeCli(args)
+
+        assertThat(result.errText).isNotBlank()
+
+        verifier(result.outText, result.errText)
+
+        assertThat(result.status).isEqualTo(INTEGRATOR_CLI_FAIL)
     }
 
     private class PrintStreamCollector(val charset: Charset) {

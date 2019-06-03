@@ -38,10 +38,12 @@ class IntegratorCli(
 
             if (detectedOptions.cmdListDataModels) {
                 listDataModels(detectedOptions)
+                throwHalt()
             }
 
             if (detectedOptions.cmdUploadDatabase != null) {
                 uploadDatabase(detectedOptions)
+                throwHalt()
             }
         }
     }
@@ -70,24 +72,18 @@ class IntegratorCli(
         outWriter.println("Listing data models from to Atome Matter")
         outWriter.println("")
 
-        val validationResults = CommandValidationResults()
-
-        detectedOptions.validateOptionIsNonNull(DetectedOptions::username, validationResults)
-        detectedOptions.validateOptionIsNonNull(DetectedOptions::password, validationResults)
-        val clientProfile = detectedOptions.selectValidClientProfile(validationResults)
-
-        validationResults.failOnErrors()
+        val listParams = detectedOptions.validListDataModelsParams()
 
         val dmClient = DataModelerClient(
-            clientProfile,
-            detectedOptions.verbosity,
+            listParams.clientProfile,
+            listParams.verbosity,
             outWriter
         )
 
-        outWriter.println("Authenticating: ${detectedOptions.username}")
+        outWriter.println("Authenticating: ${listParams.username}")
         dmClient.authenticate(
-            detectedOptions.username!!,
-            detectedOptions.password!!
+            listParams.username,
+            listParams.password
         )
 
         outWriter.println("Retrieving data models list")
@@ -107,35 +103,28 @@ class IntegratorCli(
         outWriter.println("Importing database to Atome Matter")
         outWriter.println("")
 
-        val validationResults = CommandValidationResults()
-
-        detectedOptions.validateOptionIsNonNull(DetectedOptions::targetDataModelName, validationResults)
-        detectedOptions.validateOptionIsNonNull(DetectedOptions::username, validationResults)
-        detectedOptions.validateOptionIsNonNull(DetectedOptions::password, validationResults)
-        val clientProfile = detectedOptions.selectValidClientProfile(validationResults)
-
-        validationResults.failOnErrors()
+        val uploadParams = detectedOptions.validUploadDatabaseParams()
 
         val dmClient = DataModelerClient(
-            clientProfile,
-            detectedOptions.verbosity,
+            uploadParams.clientProfile,
+            uploadParams.verbosity,
             outWriter
         )
 
-        outWriter.println("Authenticating: ${detectedOptions.username}")
+        outWriter.println("Authenticating: ${uploadParams.username}")
         dmClient.authenticate(
-            detectedOptions.username!!,
-            detectedOptions.password!!
+            uploadParams.username,
+            uploadParams.password
         )
 
-        outWriter.println("Selecting target data model: ${detectedOptions.targetDataModelName}")
+        outWriter.println("Selecting target data model: ${uploadParams.targetDataModelName}")
         val targetDataModelVersion = dmClient.selectTargetDataModelVersion(
-            detectedOptions.targetDataModelName!!
+            uploadParams.targetDataModelName
         )
 
-        outWriter.println("Uploading database file: ${detectedOptions.cmdUploadDatabase!!}")
+        outWriter.println("Uploading database file: ${uploadParams.databasePath}")
         val taskId = dmClient.uploadDatabaseAndScheduleImport(
-            detectedOptions.cmdUploadDatabase,
+            uploadParams.databasePath,
             targetDataModelVersion.dataModelId
         )
 

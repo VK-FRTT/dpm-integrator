@@ -12,6 +12,11 @@ import java.io.PrintWriter
 import java.nio.file.Path
 import java.util.LinkedHashSet
 
+const val TARGET_DATA_MODEL_OPTION_NAME = "target-data-model"
+const val CLIENT_PROFILE_OPTION_NAME = "client-profile"
+const val USERNAME_OPTION_NAME = "username"
+const val PASSWORD_OPTION_NAME = "password"
+
 class DefinedOptions {
     private val optionParser = OptionParser()
 
@@ -47,14 +52,14 @@ class DefinedOptions {
 
         targetDataModel = optionParser
             .accepts(
-                "target-data-model",
+                TARGET_DATA_MODEL_OPTION_NAME,
                 "target data model name"
             )
             .withOptionalArg()
 
         clientProfile = optionParser
             .accepts(
-                "client-profile",
+                CLIENT_PROFILE_OPTION_NAME,
                 "client profile describing Atome Matter service address etc details"
             )
             .withOptionalArg()
@@ -62,14 +67,14 @@ class DefinedOptions {
 
         username = optionParser
             .accepts(
-                "username",
+                USERNAME_OPTION_NAME,
                 "Data Modeler username"
             )
             .withOptionalArg()
 
         password = optionParser
             .accepts(
-                "password",
+                PASSWORD_OPTION_NAME,
                 "Data Modeler user password"
             )
             .withOptionalArg()
