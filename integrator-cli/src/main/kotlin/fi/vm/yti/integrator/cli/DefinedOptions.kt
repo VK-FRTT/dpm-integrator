@@ -16,6 +16,7 @@ class DefinedOptions {
     private val optionParser = OptionParser()
 
     private val cmdShowHelp: OptionSpec<Void>
+    private val cmdListDataModels: OptionSpec<Void>
     private val cmdUploadDatabase: OptionSpec<Path>
     private val targetDataModel: OptionSpec<String>
     private val clientProfile: OptionSpec<Path>
@@ -30,10 +31,16 @@ class DefinedOptions {
                 "show this help message"
             ).forHelp()
 
+        cmdListDataModels = optionParser
+            .accepts(
+                "list-data-models",
+                "list data models existing in Atome Matter"
+            )
+
         cmdUploadDatabase = optionParser
             .accepts(
                 "upload-database",
-                "upload SQL Database to DataModeler"
+                "upload database to Atome Matter"
             )
             .withOptionalArg()
             .withValuesConvertedBy(PathConverter())
@@ -43,40 +50,38 @@ class DefinedOptions {
                 "target-data-model",
                 "target data model name"
             )
-            .withRequiredArg()
+            .withOptionalArg()
 
         clientProfile = optionParser
             .accepts(
                 "client-profile",
-                "client profile describing DataModeler service address etc details"
+                "client profile describing Atome Matter service address etc details"
             )
             .withOptionalArg()
             .withValuesConvertedBy(PathConverter())
-
-        verbosity = optionParser
-            .accepts(
-                "verbose",
-                "verbose mode [${Verbosity.INFO}, ${Verbosity.DEBUG}, ${Verbosity.TRACE}]"
-            )
-            .withOptionalArg()
-            .withValuesConvertedBy(VerbosityConverter())
-            .defaultsTo(Verbosity.NONE)
 
         username = optionParser
             .accepts(
                 "username",
                 "Data Modeler username"
             )
-            .withRequiredArg()
-            .required()
+            .withOptionalArg()
 
         password = optionParser
             .accepts(
                 "password",
                 "Data Modeler user password"
             )
-            .withRequiredArg()
-            .required()
+            .withOptionalArg()
+
+        verbosity = optionParser
+            .accepts(
+                "verbose",
+                "verbose mode ${Verbosity.INFO}, ${Verbosity.DEBUG}, ${Verbosity.TRACE}"
+            )
+            .withOptionalArg()
+            .withValuesConvertedBy(VerbosityConverter())
+            .defaultsTo(Verbosity.NONE)
     }
 
     fun detectOptionsFromArgs(args: Array<String>): DetectedOptions {
@@ -107,6 +112,7 @@ class DefinedOptions {
 
         return DetectedOptions(
             cmdShowHelp = optionSet.has(cmdShowHelp),
+            cmdListDataModels = optionSet.has(cmdListDataModels),
             cmdUploadDatabase = optionSet.valueOf(cmdUploadDatabase),
             targetDataModelName = optionSet.valueOf(targetDataModel),
             clientProfile = optionSet.valueOf(clientProfile),

@@ -1,7 +1,5 @@
 package fi.vm.yti.integrator.cli
 
-import fi.vm.yti.integrator.dm.DataModelInfo
-import fi.vm.yti.integrator.dm.DataModelVersionInfo
 import java.io.BufferedWriter
 import java.io.Closeable
 import java.io.OutputStreamWriter
@@ -38,6 +36,10 @@ class IntegratorCli(
 
             detectedOptions.ensureSingleCommandGiven()
 
+            if (detectedOptions.cmdListDataModels) {
+                listDataModels(detectedOptions)
+            }
+
             if (detectedOptions.cmdUploadDatabase != null) {
                 uploadDatabase(detectedOptions)
             }
@@ -64,30 +66,70 @@ class IntegratorCli(
         }
     }
 
-    private fun uploadDatabase(detectedOptions: DetectedOptions) {
-        outWriter.println("Importing database to Atome Matter")
+    private fun listDataModels(detectedOptions: DetectedOptions) {
+        outWriter.println("Listing data models from to Atome Matter")
         outWriter.println("")
 
-        detectedOptions.ensureOptionHasValue("targetDataModelName")
-        detectedOptions.ensureOptionHasValue("clientProfile")
+        val validationResults = CommandValidationResults()
+
+        detectedOptions.validateOptionIsNonNull(DetectedOptions::username, validationResults)
+        detectedOptions.validateOptionIsNonNull(DetectedOptions::password, validationResults)
+        val clientProfile = detectedOptions.selectValidClientProfile(validationResults)
+
+        validationResults.failOnErrors()
 
         val dmClient = DataModelerClient(
-            detectedOptions.clientProfile!!,
+            clientProfile,
             detectedOptions.verbosity,
             outWriter
         )
 
         outWriter.println("Authenticating: ${detectedOptions.username}")
         dmClient.authenticate(
-            detectedOptions.username,
-            detectedOptions.password
+            detectedOptions.username!!,
+            detectedOptions.password!!
+        )
+
+        outWriter.println("Retrieving data models list")
+        val dataModels = dmClient.listDataModels()
+
+        outWriter.println("Data models:")
+        if (dataModels.isEmpty()) {
+            outWriter.println("- None")
+        } else {
+            dataModels.forEach { modelInfo ->
+                outWriter.println("- ${modelInfo.name}")
+            }
+        }
+    }
+
+    private fun uploadDatabase(detectedOptions: DetectedOptions) {
+        outWriter.println("Importing database to Atome Matter")
+        outWriter.println("")
+
+        val validationResults = CommandValidationResults()
+
+        detectedOptions.validateOptionIsNonNull(DetectedOptions::targetDataModelName, validationResults)
+        detectedOptions.validateOptionIsNonNull(DetectedOptions::username, validationResults)
+        detectedOptions.validateOptionIsNonNull(DetectedOptions::password, validationResults)
+        val clientProfile = detectedOptions.selectValidClientProfile(validationResults)
+
+        validationResults.failOnErrors()
+
+        val dmClient = DataModelerClient(
+            clientProfile,
+            detectedOptions.verbosity,
+            outWriter
+        )
+
+        outWriter.println("Authenticating: ${detectedOptions.username}")
+        dmClient.authenticate(
+            detectedOptions.username!!,
+            detectedOptions.password!!
         )
 
         outWriter.println("Selecting target data model: ${detectedOptions.targetDataModelName}")
-        val dataModels = dmClient.listDataModels()
-
-        val targetDataModelVersion = selectTargetDataModelVersion(
-            dataModels,
+        val targetDataModelVersion = dmClient.selectTargetDataModelVersion(
             detectedOptions.targetDataModelName!!
         )
 
@@ -127,34 +169,5 @@ class IntegratorCli(
                 }
             }
         }
-    }
-
-    private fun selectTargetDataModelVersion(
-        dataModels: List<DataModelInfo>,
-        targetDataModelName: String
-    ): DataModelVersionInfo {
-        val matchingModels = dataModels.filter { it.name == targetDataModelName }
-
-        if (matchingModels.isEmpty()) {
-            throwFail("Data model selection failed. No data model found for name: $targetDataModelName")
-        }
-
-        if (matchingModels.size >= 2) {
-            throwFail("Data model selection failed. Multiple data models having same name: $targetDataModelName")
-        }
-
-        val targetModel = matchingModels.first()
-        val versions = targetModel.dataModelVersions.sortedBy { it.creationDate }
-        if (versions.isEmpty()) {
-            throwFail("Data model selection failed. Data model does not have any version: $targetDataModelName")
-        }
-
-        val targetVersion = versions.last()
-
-        if (targetModel.id != targetVersion.dataModelId) {
-            throwFail("Data model selection failed. Data model ID and version ID do not match: $targetDataModelName")
-        }
-
-        return targetVersion
     }
 }

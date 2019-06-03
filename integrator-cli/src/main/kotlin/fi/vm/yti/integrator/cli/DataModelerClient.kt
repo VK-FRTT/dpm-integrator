@@ -3,6 +3,7 @@ package fi.vm.yti.integrator.cli
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import fi.vm.yti.integrator.dm.DataModelInfo
+import fi.vm.yti.integrator.dm.DataModelVersionInfo
 import fi.vm.yti.integrator.dm.TaskStatusInfo
 import okhttp3.MediaType
 import okhttp3.MultipartBody
@@ -75,6 +76,41 @@ class DataModelerClient(
         val result = executeAndExpectSuccess(request, "Listing data models")
 
         return mapper.readValue(result.responseBody)
+    }
+
+    fun selectTargetDataModelVersion(
+        targetDataModelName: String
+    ): DataModelVersionInfo {
+
+        fun dataModelSelectionFailed(description: String) {
+            throwFail("Data model selection failed. $description")
+        }
+
+        val dataModels = listDataModels()
+
+        val matchingModels = dataModels.filter { it.name == targetDataModelName }
+
+        if (matchingModels.isEmpty()) {
+            dataModelSelectionFailed("No data model found with given name: $targetDataModelName")
+        }
+
+        if (matchingModels.size >= 2) {
+            dataModelSelectionFailed("Multiple data models having given name: $targetDataModelName")
+        }
+
+        val targetModel = matchingModels.first()
+        val versions = targetModel.dataModelVersions.sortedBy { it.creationDate }
+        if (versions.isEmpty()) {
+            dataModelSelectionFailed("Data model does not have any version: $targetDataModelName")
+        }
+
+        val targetVersion = versions.last()
+
+        if (targetModel.id != targetVersion.dataModelId) {
+            dataModelSelectionFailed("Data model selection failed. Data model ID and version ID do not match: $targetDataModelName")
+        }
+
+        return targetVersion
     }
 
     fun uploadDatabaseAndScheduleImport(
