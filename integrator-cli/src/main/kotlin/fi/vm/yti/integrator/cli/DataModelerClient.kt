@@ -56,7 +56,7 @@ class DataModelerClient(
         val authorization = "Basic $clientCredentialsBase64"
 
         val request = Request.Builder()
-            .url("${profile.authApiUrl}/oauth/token")
+            .url("${profile.authServiceHost}/oauth/token")
             .addHeader("Authorization", authorization)
             .post(body)
             .build()
@@ -70,7 +70,7 @@ class DataModelerClient(
     fun listDataModels(): List<DataModelInfo> {
         val request = authorizedRequestBuilder()
             .get()
-            .url("${profile.hmrApiUrl}/model/data/")
+            .url("${profile.hmrServiceHost}/model/data/")
             .build()
 
         val result = executeAndExpectSuccess(request, "Listing data models")
@@ -132,7 +132,7 @@ class DataModelerClient(
 
         val request = authorizedRequestBuilder()
             .post(requestBody)
-            .url("${profile.exportImportApiUrl}/api/import/db/schedule")
+            .url("${profile.exportImportServiceHost}/api/import/db/schedule")
             .addHeader("dataModelId", targtDataModelId)
             .build()
 
@@ -147,7 +147,7 @@ class DataModelerClient(
     ): TaskStatusInfo {
         val request = authorizedRequestBuilder()
             .get()
-            .url("${profile.exportImportApiUrl}/api/task/$taskId/import")
+            .url("${profile.exportImportServiceHost}/api/task/$taskId/import")
             .addHeader("dataModelVersionId", dataModelVersionId)
             .build()
 

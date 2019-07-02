@@ -8,23 +8,23 @@ import kotlin.reflect.KProperty0
 class ClientProfileInput(
     val clientId: String?,
     val clientSecret: String?,
-    val authApiUrl: String?,
-    val hmrApiUrl: String?,
-    val exportImportApiUrl: String?
+    val authServiceHost: String?,
+    val hmrServiceHost: String?,
+    val exportImportServiceHost: String?
 ) {
     fun toValidProfile(): ClientProfile {
         validateValueNotNull(this::clientId)
         validateValueNotNull(this::clientSecret)
-        validateValueNotNull(this::authApiUrl)
-        validateValueNotNull(this::hmrApiUrl)
-        validateValueNotNull(this::exportImportApiUrl)
+        validateValueNotNull(this::authServiceHost)
+        validateValueNotNull(this::hmrServiceHost)
+        validateValueNotNull(this::exportImportServiceHost)
 
         return ClientProfile(
             clientId = clientId!!,
             clientSecret = clientSecret!!,
-            authApiUrl = authApiUrl!!,
-            hmrApiUrl = hmrApiUrl!!,
-            exportImportApiUrl = exportImportApiUrl!!
+            authServiceHost = authServiceHost!!,
+            hmrServiceHost = hmrServiceHost!!,
+            exportImportServiceHost = exportImportServiceHost!!
         )
     }
 

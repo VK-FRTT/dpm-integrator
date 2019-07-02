@@ -4,7 +4,7 @@ data class ClientProfile(
     val clientId: String,
     val clientSecret: String,
 
-    val authApiUrl: String,
-    val hmrApiUrl: String,
-    val exportImportApiUrl: String
+    val authServiceHost: String,
+    val hmrServiceHost: String,
+    val exportImportServiceHost: String
 )
