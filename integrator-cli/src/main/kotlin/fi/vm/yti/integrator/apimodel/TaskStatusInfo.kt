@@ -1,4 +1,4 @@
-package fi.vm.yti.integrator.dm
+package fi.vm.yti.integrator.apimodel
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 

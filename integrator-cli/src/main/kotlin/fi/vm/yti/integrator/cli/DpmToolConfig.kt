@@ -1,6 +1,8 @@
 package fi.vm.yti.integrator.cli
 
-data class ClientProfile(
+data class DpmToolConfig(
+    val dpmToolName: String,
+
     val clientId: String,
     val clientSecret: String,
 

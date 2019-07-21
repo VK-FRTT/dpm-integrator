@@ -12,19 +12,25 @@ import java.io.PrintWriter
 import java.nio.file.Path
 import java.util.LinkedHashSet
 
-const val TARGET_DATA_MODEL_OPTION_NAME = "target-data-model"
-const val CLIENT_PROFILE_OPTION_NAME = "client-profile"
-const val USERNAME_OPTION_NAME = "username"
-const val PASSWORD_OPTION_NAME = "password"
+enum class OptName(val nameString: String) {
+
+    LIST_DATA_MODELS("list-data-models"),
+    IMPORT_DB_TO_EXISTING("import-db-to-existing-model"),
+    TARGET_DATA_MODEL_NAME("target-data-model"),
+    DPM_TOOL_CONFIG("dpm-tool-config"),
+    USERNAME("username"),
+    PASSWORD("password"),
+    VERBOSE("verbose")
+}
 
 class DefinedOptions {
     private val optionParser = OptionParser()
 
     private val cmdShowHelp: OptionSpec<Void>
     private val cmdListDataModels: OptionSpec<Void>
-    private val cmdUploadDatabase: OptionSpec<Path>
-    private val targetDataModel: OptionSpec<String>
-    private val clientProfile: OptionSpec<Path>
+    private val cmdImportDbToExistingModel: OptionSpec<Path>
+    private val targetDataModelName: OptionSpec<String>
+    private val dpmToolConfig: OptionSpec<Path>
     private val verbosity: OptionSpec<Verbosity>
     private val username: OptionSpec<String>
     private val password: OptionSpec<String>
@@ -38,50 +44,50 @@ class DefinedOptions {
 
         cmdListDataModels = optionParser
             .accepts(
-                "list-data-models",
-                "list data models existing in Atome Matter"
+                OptName.LIST_DATA_MODELS.nameString,
+                "list data models from the DPM Tool"
             )
 
-        cmdUploadDatabase = optionParser
+        cmdImportDbToExistingModel = optionParser
             .accepts(
-                "upload-database",
-                "upload database to Atome Matter"
+                OptName.IMPORT_DB_TO_EXISTING.nameString,
+                "import SQlite Database to existing data model on the DPM Tool"
             )
             .withOptionalArg()
             .withValuesConvertedBy(PathConverter())
 
-        targetDataModel = optionParser
+        targetDataModelName = optionParser
             .accepts(
-                TARGET_DATA_MODEL_OPTION_NAME,
+                OptName.TARGET_DATA_MODEL_NAME.nameString,
                 "target data model name"
             )
             .withOptionalArg()
 
-        clientProfile = optionParser
+        dpmToolConfig = optionParser
             .accepts(
-                CLIENT_PROFILE_OPTION_NAME,
-                "client profile describing Atome Matter service address etc details"
+                OptName.DPM_TOOL_CONFIG.nameString,
+                "configuration file describing the DPM Tool address and similar details"
             )
             .withOptionalArg()
             .withValuesConvertedBy(PathConverter())
 
         username = optionParser
             .accepts(
-                USERNAME_OPTION_NAME,
-                "Data Modeler username"
+                OptName.USERNAME.nameString,
+                "username for authenticating to the DPM Tool"
             )
             .withOptionalArg()
 
         password = optionParser
             .accepts(
-                PASSWORD_OPTION_NAME,
-                "Data Modeler user password"
+                OptName.PASSWORD.nameString,
+                "password for authenticating to the DPM Tool"
             )
             .withOptionalArg()
 
         verbosity = optionParser
             .accepts(
-                "verbose",
+                OptName.VERBOSE.nameString,
                 "verbose mode ${Verbosity.INFO}, ${Verbosity.DEBUG}, ${Verbosity.TRACE}"
             )
             .withOptionalArg()
@@ -118,9 +124,9 @@ class DefinedOptions {
         return DetectedOptions(
             cmdShowHelp = optionSet.has(cmdShowHelp),
             cmdListDataModels = optionSet.has(cmdListDataModels),
-            cmdUploadDatabase = optionSet.valueOf(cmdUploadDatabase),
-            targetDataModelName = optionSet.valueOf(targetDataModel),
-            clientProfile = optionSet.valueOf(clientProfile),
+            cmdImportDbToExistingModel = optionSet.valueOf(cmdImportDbToExistingModel),
+            targetDataModelName = optionSet.valueOf(targetDataModelName),
+            dpmToolConfig = optionSet.valueOf(dpmToolConfig),
             verbosity = optionSet.valueOf(verbosity),
             username = optionSet.valueOf(username),
             password = optionSet.valueOf(password)

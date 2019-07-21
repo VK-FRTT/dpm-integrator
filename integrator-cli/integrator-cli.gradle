@@ -1,4 +1,4 @@
-description = 'Stand-alone command line application for executing BR-AG DataModeler integration tasks from console'
+description = 'Stand-alone command line application for executing DPM Tool integration tasks from console'
 
 
 buildscript {

@@ -2,9 +2,9 @@ package fi.vm.yti.integrator.cli
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import fi.vm.yti.integrator.dm.DataModelInfo
-import fi.vm.yti.integrator.dm.DataModelVersionInfo
-import fi.vm.yti.integrator.dm.TaskStatusInfo
+import fi.vm.yti.integrator.apimodel.DataModelInfo
+import fi.vm.yti.integrator.apimodel.DataModelVersionInfo
+import fi.vm.yti.integrator.apimodel.TaskStatusInfo
 import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -16,8 +16,8 @@ import java.nio.file.Path
 import java.util.Base64
 import java.util.concurrent.TimeUnit
 
-class DataModelerClient(
-    clientProfilePath: Path,
+class DpmToolClient(
+    val toolConfig: DpmToolConfig,
     verbosity: Verbosity,
     outWriter: PrintWriter
 ) {
@@ -30,7 +30,6 @@ class DataModelerClient(
 
     private val mapper = jacksonObjectMapper()
     private val utf8Charset = Charset.forName("UTF-8")
-    private val profile = loadClientProfile(clientProfilePath)
     private var accessToken: String? = null
 
     fun authenticate(username: String, password: String) {
@@ -50,13 +49,13 @@ class DataModelerClient(
         val clientCredentialsBase64 = Base64
             .getEncoder()
             .encodeToString(
-                "${profile.clientId}:${profile.clientSecret}".toByteArray(utf8Charset)
+                "${toolConfig.clientId}:${toolConfig.clientSecret}".toByteArray(utf8Charset)
             )
 
         val authorization = "Basic $clientCredentialsBase64"
 
         val request = Request.Builder()
-            .url("${profile.authServiceHost}/oauth/token")
+            .url("${toolConfig.authServiceHost}/oauth/token")
             .addHeader("Authorization", authorization)
             .post(body)
             .build()
@@ -70,7 +69,7 @@ class DataModelerClient(
     fun listDataModels(): List<DataModelInfo> {
         val request = authorizedRequestBuilder()
             .get()
-            .url("${profile.hmrServiceHost}/model/data/")
+            .url("${toolConfig.hmrServiceHost}/model/data/")
             .build()
 
         val result = executeAndExpectSuccess(request, "Listing data models")
@@ -132,7 +131,7 @@ class DataModelerClient(
 
         val request = authorizedRequestBuilder()
             .post(requestBody)
-            .url("${profile.exportImportServiceHost}/api/import/db/schedule")
+            .url("${toolConfig.exportImportServiceHost}/api/import/db/schedule")
             .addHeader("dataModelId", targtDataModelId)
             .build()
 
@@ -147,18 +146,13 @@ class DataModelerClient(
     ): TaskStatusInfo {
         val request = authorizedRequestBuilder()
             .get()
-            .url("${profile.exportImportServiceHost}/api/task/$taskId/import")
+            .url("${toolConfig.exportImportServiceHost}/api/task/$taskId/import")
             .addHeader("dataModelVersionId", dataModelVersionId)
             .build()
 
         val result = executeAndExpectSuccess(request, "Fetch task status")
 
         return mapper.readValue(result.responseBody)
-    }
-
-    private fun loadClientProfile(clientProfilePath: Path): ClientProfile {
-        val input = mapper.readValue<ClientProfileInput>(clientProfilePath.toUri().toURL())
-        return input.toValidProfile()
     }
 
     private fun authorizedRequestBuilder(): Request.Builder {

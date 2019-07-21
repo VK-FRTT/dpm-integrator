@@ -1,11 +1,12 @@
-package fi.vm.yti.integrator.dm
+package fi.vm.yti.integrator.apimodel
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class DataModelInfo(
+data class DataModelVersionInfo(
     val type: String,
     val id: String,
-    val name: String,
-    val dataModelVersions: List<DataModelVersionInfo>
+    val creationDate: String,
+    val dataModelId: String,
+    val name: String
 )

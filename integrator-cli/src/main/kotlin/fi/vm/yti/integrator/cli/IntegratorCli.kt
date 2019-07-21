@@ -1,14 +1,18 @@
 package fi.vm.yti.integrator.cli
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import java.io.BufferedWriter
 import java.io.Closeable
 import java.io.OutputStreamWriter
 import java.io.PrintStream
 import java.io.PrintWriter
 import java.nio.charset.Charset
+import java.nio.file.Path
 
 const val INTEGRATOR_CLI_SUCCESS = 0
 const val INTEGRATOR_CLI_FAIL = 1
+const val INTEGRATOR_TITLE = "DPM Tool Integrator"
 
 class IntegratorCli(
     outStream: PrintStream,
@@ -27,6 +31,8 @@ class IntegratorCli(
 
     fun execute(args: Array<String>): Int {
         return withExceptionHarness {
+            outWriter.println(INTEGRATOR_TITLE)
+
             val detectedOptions = definedOptions.detectOptionsFromArgs(args)
 
             if (detectedOptions.cmdShowHelp) {
@@ -41,8 +47,8 @@ class IntegratorCli(
                 throwHalt()
             }
 
-            if (detectedOptions.cmdUploadDatabase != null) {
-                uploadDatabase(detectedOptions)
+            if (detectedOptions.cmdImportDbToExistingModel != null) {
+                importDbToExistingModel(detectedOptions)
                 throwHalt()
             }
         }
@@ -55,12 +61,12 @@ class IntegratorCli(
         } catch (exception: HaltException) {
             INTEGRATOR_CLI_SUCCESS
         } catch (exception: FailException) {
-            errWriter.println("${exception.message}")
+            errWriter.println("\n ${exception.message}")
             errWriter.println()
 
             INTEGRATOR_CLI_FAIL
         } catch (exception: Throwable) {
-            errWriter.println("yti-brag-dm-integrator:")
+            errWriter.println(INTEGRATOR_TITLE)
             exception.printStackTrace(errWriter)
             errWriter.println()
 
@@ -69,25 +75,26 @@ class IntegratorCli(
     }
 
     private fun listDataModels(detectedOptions: DetectedOptions) {
-        outWriter.println("Listing data models from to Atome Matter")
+        val listParams = detectedOptions.validListDataModelsParams()
+        val toolConfig = loadToolConfig(listParams.dpmToolConfigPath)
+
+        outWriter.println("Listing data models from: ${toolConfig.dpmToolName}")
         outWriter.println("")
 
-        val listParams = detectedOptions.validListDataModelsParams()
-
-        val dmClient = DataModelerClient(
-            listParams.clientProfile,
+        val client = DpmToolClient(
+            toolConfig,
             listParams.verbosity,
             outWriter
         )
 
         outWriter.println("Authenticating: ${listParams.username}")
-        dmClient.authenticate(
+        client.authenticate(
             listParams.username,
             listParams.password
         )
 
         outWriter.println("Retrieving data models list")
-        val dataModels = dmClient.listDataModels()
+        val dataModels = client.listDataModels()
 
         outWriter.println("Data models:")
         if (dataModels.isEmpty()) {
@@ -99,32 +106,33 @@ class IntegratorCli(
         }
     }
 
-    private fun uploadDatabase(detectedOptions: DetectedOptions) {
-        outWriter.println("Importing database to Atome Matter")
+    private fun importDbToExistingModel(detectedOptions: DetectedOptions) {
+        val importParams = detectedOptions.validImportDatabaseParams()
+        val toolConfig = loadToolConfig(importParams.dpmToolConfigPath)
+
+        outWriter.println("Importing database to: ${toolConfig.dpmToolName}")
         outWriter.println("")
 
-        val uploadParams = detectedOptions.validUploadDatabaseParams()
-
-        val dmClient = DataModelerClient(
-            uploadParams.clientProfile,
-            uploadParams.verbosity,
+        val client = DpmToolClient(
+            toolConfig,
+            importParams.verbosity,
             outWriter
         )
 
-        outWriter.println("Authenticating: ${uploadParams.username}")
-        dmClient.authenticate(
-            uploadParams.username,
-            uploadParams.password
+        outWriter.println("Authenticating: ${importParams.username}")
+        client.authenticate(
+            importParams.username,
+            importParams.password
         )
 
-        outWriter.println("Selecting target data model: ${uploadParams.targetDataModelName}")
-        val targetDataModelVersion = dmClient.selectTargetDataModelVersion(
-            uploadParams.targetDataModelName
+        outWriter.println("Selecting target data model: ${importParams.targetDataModelName}")
+        val targetDataModelVersion = client.selectTargetDataModelVersion(
+            importParams.targetDataModelName
         )
 
-        outWriter.println("Uploading database file: ${uploadParams.databasePath}")
-        val taskId = dmClient.uploadDatabaseAndScheduleImport(
-            uploadParams.databasePath,
+        outWriter.println("Uploading database file: ${importParams.databasePath}")
+        val taskId = client.uploadDatabaseAndScheduleImport(
+            importParams.databasePath,
             targetDataModelVersion.dataModelId
         )
 
@@ -133,7 +141,7 @@ class IntegratorCli(
             outWriter.print("..")
             outWriter.flush()
 
-            val taskStatus = dmClient.fetchTaskStatus(
+            val taskStatus = client.fetchTaskStatus(
                 taskId,
                 targetDataModelVersion.id
             )
@@ -158,5 +166,13 @@ class IntegratorCli(
                 }
             }
         }
+    }
+
+    private fun loadToolConfig(toolConfigPath: Path): DpmToolConfig {
+        val mapper = jacksonObjectMapper()
+
+        val input = mapper.readValue<DpmToolConfigInput>(toolConfigPath.toUri().toURL())
+
+        return input.toValidConfig()
     }
 }

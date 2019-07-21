@@ -15,16 +15,14 @@ internal class IntegratorCli_ListDataModels_Test : IntegratorCli_TestBase(
         executeCliAndExpectFail(args) { outText, errText ->
 
             assertThat(outText).containsSubsequence(
-                "Listing data models from to Atome Matter"
+                "DPM Tool Integrator"
             )
 
             assertThat(errText).contains(
                 "Error:",
                 "- username: missing required parameter value",
                 "- password: missing required parameter value",
-                "- default client profile: file not found (",
-                "default-profile.json)"
-            )
+                "- dpm-tool-config (default configuration): file not found (", "default-dpm-tool-config.json)" )
         }
     }
 }

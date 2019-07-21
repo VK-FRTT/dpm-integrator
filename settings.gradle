@@ -1,4 +1,4 @@
-rootProject.name = "yti-brag-dm-integrator"
+rootProject.name = "yti-dpm-tool-integrator"
 
 include 'integrator-cli'
 

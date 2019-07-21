@@ -1,4 +1,4 @@
-description = 'YTI BR-AG DataModeler Integrator'
+description = 'DPM Tool Integrator'
 
 apply from: "gradle/dependencies.gradle"
 
@@ -25,7 +25,7 @@ allprojects { subproj ->
     apply plugin: 'java-library'
     apply plugin: 'idea'
 
-    group = 'fi.vm.yti.brag-dm-integrator'
+    group = 'fi.vm.yti.integrator'
 
     repositories {
         mavenCentral()
