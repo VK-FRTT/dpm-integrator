@@ -13,8 +13,9 @@ import java.nio.file.Path
 const val INTEGRATOR_CLI_SUCCESS = 0
 const val INTEGRATOR_CLI_FAIL = 1
 const val INTEGRATOR_TITLE = "DPM Tool Integrator"
+const val INTEGRATOR_THREAD_SLEEP_MILLIS = 2_500L
 
-class IntegratorCli(
+internal class IntegratorCli(
     outStream: PrintStream,
     errStream: PrintStream,
     charset: Charset,
@@ -88,13 +89,13 @@ class IntegratorCli(
         )
 
         outWriter.println("Authenticating: ${listParams.username}")
-        client.authenticate(
+        client.authenticateSync(
             listParams.username,
             listParams.password
         )
 
         outWriter.println("Retrieving data models list")
-        val dataModels = client.listDataModels()
+        val dataModels = client.listDataModelsSync()
 
         outWriter.println("Data models:")
         if (dataModels.isEmpty()) {
@@ -120,28 +121,40 @@ class IntegratorCli(
         )
 
         outWriter.println("Authenticating: ${importParams.username}")
-        client.authenticate(
+        client.authenticateSync(
             importParams.username,
             importParams.password
         )
 
         outWriter.println("Selecting target data model: ${importParams.targetDataModelName}")
-        val targetDataModelVersion = client.selectTargetDataModelVersion(
+        val targetDataModelVersion = client.selectTargetDataModelVersionSync(
             importParams.targetDataModelName
         )
 
-        outWriter.println("Uploading database file: ${importParams.databasePath}")
-        val taskId = client.uploadDatabaseAndScheduleImport(
+        outWriter.print("Uploading database file: ${importParams.databasePath} ")
+
+        val uploadOp = client.uploadDatabaseAndScheduleImportAsync(
             importParams.databasePath,
             targetDataModelVersion.dataModelId
         )
 
-        outWriter.print("Waiting import to complete")
+        val taskId = {
+            while (uploadOp.isPending()) {
+                outWriter.print("..")
+                outWriter.flush()
+                Thread.sleep(INTEGRATOR_THREAD_SLEEP_MILLIS)
+            }
+
+            uploadOp.expectSuccessAndGetResponseBody()
+        }()
+
+        outWriter.println("")
+        outWriter.print("Waiting import to complete ")
         while (true) {
             outWriter.print("..")
             outWriter.flush()
 
-            val taskStatus = client.fetchTaskStatus(
+            val taskStatus = client.fetchTaskStatusSync(
                 taskId,
                 targetDataModelVersion.id
             )
@@ -149,7 +162,7 @@ class IntegratorCli(
             when (taskStatus.taskStatus) {
 
                 "SCHEDULED", "IN_PROGRESS" -> {
-                    Thread.sleep(2_500)
+                    Thread.sleep(INTEGRATOR_THREAD_SLEEP_MILLIS)
                 }
 
                 "FINISHED" -> {

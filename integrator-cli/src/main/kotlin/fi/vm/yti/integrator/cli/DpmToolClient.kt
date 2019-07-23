@@ -16,12 +16,11 @@ import java.nio.file.Path
 import java.util.Base64
 import java.util.concurrent.TimeUnit
 
-class DpmToolClient(
-    val toolConfig: DpmToolConfig,
+internal class DpmToolClient(
+    private val toolConfig: DpmToolConfig,
     verbosity: Verbosity,
     outWriter: PrintWriter
 ) {
-
     private val httpClient = OkHttpClient
         .Builder()
         .addNetworkInterceptor(LoggingInterceptor(verbosity, outWriter))
@@ -32,7 +31,7 @@ class DpmToolClient(
     private val utf8Charset = Charset.forName("UTF-8")
     private var accessToken: String? = null
 
-    fun authenticate(username: String, password: String) {
+    fun authenticateSync(username: String, password: String) {
         val loginPayload = mapper.writeValueAsString(
             mapOf(
                 "grant_type" to "password",
@@ -60,24 +59,24 @@ class DpmToolClient(
             .post(body)
             .build()
 
-        val result = executeAndExpectSuccess(request, "Authentication")
+        val result = executeRequestSyncAndExpectSuccess(request, "Authentication")
 
         val responseJson = mapper.readTree(result.responseBody)
         accessToken = responseJson.get("access_token").asText()
     }
 
-    fun listDataModels(): List<DataModelInfo> {
+    fun listDataModelsSync(): List<DataModelInfo> {
         val request = authorizedRequestBuilder()
             .get()
             .url("${toolConfig.hmrServiceHost}/model/data/")
             .build()
 
-        val result = executeAndExpectSuccess(request, "Listing data models")
+        val result = executeRequestSyncAndExpectSuccess(request, "Listing data models")
 
         return mapper.readValue(result.responseBody)
     }
 
-    fun selectTargetDataModelVersion(
+    fun selectTargetDataModelVersionSync(
         targetDataModelName: String
     ): DataModelVersionInfo {
 
@@ -85,7 +84,7 @@ class DpmToolClient(
             throwFail("Data model selection failed. $description")
         }
 
-        val dataModels = listDataModels()
+        val dataModels = listDataModelsSync()
 
         val matchingModels = dataModels.filter { it.name == targetDataModelName }
 
@@ -112,10 +111,10 @@ class DpmToolClient(
         return targetVersion
     }
 
-    fun uploadDatabaseAndScheduleImport(
+    fun uploadDatabaseAndScheduleImportAsync(
         sourceFilePath: Path,
         targtDataModelId: String
-    ): String {
+    ): AsyncHttpOp {
         val requestBody = MultipartBody
             .Builder()
             .setType(MultipartBody.FORM)
@@ -135,12 +134,10 @@ class DpmToolClient(
             .addHeader("dataModelId", targtDataModelId)
             .build()
 
-        val result = executeAndExpectSuccess(request, "Database upload")
-
-        return result.responseBody
+        return enqueueAsyncOp(request, "Database upload")
     }
 
-    fun fetchTaskStatus(
+    fun fetchTaskStatusSync(
         taskId: String,
         dataModelVersionId: String
     ): TaskStatusInfo {
@@ -150,7 +147,7 @@ class DpmToolClient(
             .addHeader("dataModelVersionId", dataModelVersionId)
             .build()
 
-        val result = executeAndExpectSuccess(request, "Fetch task status")
+        val result = executeRequestSyncAndExpectSuccess(request, "Fetch task status")
 
         return mapper.readValue(result.responseBody)
     }
@@ -163,33 +160,32 @@ class DpmToolClient(
             .addHeader("Authorization", "Bearer $accessToken")
     }
 
-    private fun execute(request: Request): HttpRequestResult {
+    private fun executeRequestSync(
+        request: Request
+    ): HttpRequestResult {
         val response = try {
             httpClient.newCall(request).execute()
-        } catch (e: java.net.UnknownHostException) {
-            throwFail("Could not determine the server IP address. Url: ${request.url()}")
-        } catch (e: java.net.ConnectException) {
-            throwFail("Could not connect the server. Url: ${request.url()}")
-        } catch (e: java.net.SocketTimeoutException) {
-            throwFail("The server communication timeout. ${request.url()}")
+        } catch (e: Exception) {
+            HttpResultMapper.handleRequestException(request, e)
         }
 
-        return HttpRequestResult(
-            statusCode = response.code(),
-            statusMessage = response.message(),
-            responseBody = response.body().use {
-                it?.string() ?: ""
-            }
-        )
+        return HttpResultMapper.responseToHttpRequestResult(response)
     }
 
-    private fun executeAndExpectSuccess(request: Request, requestName: String): HttpRequestResult {
-        val result = execute(request)
+    private fun executeRequestSyncAndExpectSuccess(
+        request: Request,
+        requestName: String
+    ): HttpRequestResult {
+        val result = executeRequestSync(request)
 
-        if (!result.isSuccessful()) {
-            throwFail("$requestName failed. HTTP status: ${result.statusCode}. Response body: ${result.responseBody}")
-        }
+        HttpResultMapper.handleRequestHttpFailure(requestName, result)
 
         return result
+    }
+
+    private fun enqueueAsyncOp(request: Request, requestName: String): AsyncHttpOp {
+        val asyncOp = AsyncHttpOp(requestName)
+        httpClient.newCall(request).enqueue(asyncOp)
+        return asyncOp
     }
 }
