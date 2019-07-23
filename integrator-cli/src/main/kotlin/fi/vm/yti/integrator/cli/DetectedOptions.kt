@@ -54,7 +54,7 @@ data class DetectedOptions(
         val results = CommandValidationResults()
 
         val resolvedToolConfigPath = resolveValidDpmToolConfigPath(results)
-        requireFileExists(cmdImportDbToExistingModel!!, OptName.IMPORT_DB_TO_EXISTING, results)
+        requireFileExists(cmdImportDbToExistingModel, OptName.IMPORT_DB_TO_EXISTING, results)
         requireNonNullOptionValue(targetDataModelName, OptName.TARGET_DATA_MODEL_NAME, results)
         requireNonNullOptionValue(username, OptName.USERNAME, results)
         requireNonNullOptionValue(password, OptName.PASSWORD, results)
