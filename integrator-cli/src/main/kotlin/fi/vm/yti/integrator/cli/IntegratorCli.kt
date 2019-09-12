@@ -2,6 +2,8 @@ package fi.vm.yti.integrator.cli
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import fi.vm.yti.integrator.cli.config.DpmToolConfig
+import fi.vm.yti.integrator.cli.config.DpmToolConfigInput
 import java.io.BufferedWriter
 import java.io.Closeable
 import java.io.OutputStreamWriter
@@ -38,6 +40,11 @@ internal class IntegratorCli(
 
             if (detectedOptions.cmdShowHelp) {
                 definedOptions.printHelp(outWriter)
+                throwHalt()
+            }
+
+            if (detectedOptions.cmdShowVersion) {
+                IntegratorCliVersion.printVersion(outWriter)
                 throwHalt()
             }
 

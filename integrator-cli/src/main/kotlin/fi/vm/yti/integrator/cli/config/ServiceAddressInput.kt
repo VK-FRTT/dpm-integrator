@@ -1,30 +1,22 @@
-package fi.vm.yti.integrator.cli
+package fi.vm.yti.integrator.cli.config
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import fi.vm.yti.integrator.cli.throwFail
 import kotlin.reflect.KProperty0
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Suppress("MemberVisibilityCanBePrivate")
-class DpmToolConfigInput(
-    val dpmToolName: String?,
-    val clientId: String?,
-    val clientSecret: String?,
+class ServiceAddressInput(
     val authServiceHost: String?,
     val hmrServiceHost: String?,
     val exportImportServiceHost: String?
 ) {
-    fun toValidConfig(): DpmToolConfig {
-        validateValueNotNull(this::dpmToolName)
-        validateValueNotNull(this::clientId)
-        validateValueNotNull(this::clientSecret)
+    fun toValidConfig(): ServiceAddress {
         validateValueNotNull(this::authServiceHost)
         validateValueNotNull(this::hmrServiceHost)
         validateValueNotNull(this::exportImportServiceHost)
 
-        return DpmToolConfig(
-            dpmToolName = dpmToolName!!,
-            clientId = clientId!!,
-            clientSecret = clientSecret!!,
+        return ServiceAddress(
             authServiceHost = authServiceHost!!,
             hmrServiceHost = hmrServiceHost!!,
             exportImportServiceHost = exportImportServiceHost!!
@@ -33,7 +25,7 @@ class DpmToolConfigInput(
 
     private fun <T : Any?> validateValueNotNull(property: KProperty0<T>) {
         if (property.get() == null) {
-            throwFail("DpmToolConfig: No value for '${property.name}'")
+            throwFail("DpmToolConfig.ServiceAddress: No value for '${property.name}'")
         }
     }
 }

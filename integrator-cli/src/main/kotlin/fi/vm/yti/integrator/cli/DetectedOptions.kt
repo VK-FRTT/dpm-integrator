@@ -22,6 +22,7 @@ data class ListDataModelsParams(
 
 data class DetectedOptions(
     val cmdShowHelp: Boolean,
+    val cmdShowVersion: Boolean,
     val cmdListDataModels: Boolean,
     val cmdImportDbToExistingModel: Path?,
     val targetDataModelName: String?,

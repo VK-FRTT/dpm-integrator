@@ -27,6 +27,7 @@ class DefinedOptions {
     private val optionParser = OptionParser()
 
     private val cmdShowHelp: OptionSpec<Void>
+    private val cmdShowVersion: OptionSpec<Void>
     private val cmdListDataModels: OptionSpec<Void>
     private val cmdImportDbToExistingModel: OptionSpec<Path>
     private val targetDataModelName: OptionSpec<String>
@@ -41,6 +42,12 @@ class DefinedOptions {
                 "help",
                 "show this help message"
             ).forHelp()
+
+        cmdShowVersion = optionParser
+            .accepts(
+                "version",
+                "show version information"
+            )
 
         cmdListDataModels = optionParser
             .accepts(
@@ -123,6 +130,7 @@ class DefinedOptions {
 
         return DetectedOptions(
             cmdShowHelp = optionSet.has(cmdShowHelp),
+            cmdShowVersion = optionSet.has(cmdShowVersion),
             cmdListDataModels = optionSet.has(cmdListDataModels),
             cmdImportDbToExistingModel = optionSet.valueOf(cmdImportDbToExistingModel),
             targetDataModelName = optionSet.valueOf(targetDataModelName),

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import fi.vm.yti.integrator.apimodel.DataModelInfo
 import fi.vm.yti.integrator.apimodel.DataModelVersionInfo
 import fi.vm.yti.integrator.apimodel.TaskStatusInfo
+import fi.vm.yti.integrator.cli.config.DpmToolConfig
 import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -48,13 +49,13 @@ internal class DpmToolClient(
         val clientCredentialsBase64 = Base64
             .getEncoder()
             .encodeToString(
-                "${toolConfig.clientId}:${toolConfig.clientSecret}".toByteArray(utf8Charset)
+                "${toolConfig.clientAuthBasic.username}:${toolConfig.clientAuthBasic.password}".toByteArray(utf8Charset)
             )
 
         val authorization = "Basic $clientCredentialsBase64"
 
         val request = Request.Builder()
-            .url("${toolConfig.authServiceHost}/oauth/token")
+            .url("${toolConfig.serviceAddress.authServiceHost}/oauth/token")
             .addHeader("Authorization", authorization)
             .post(body)
             .build()
@@ -68,7 +69,7 @@ internal class DpmToolClient(
     fun listDataModelsSync(): List<DataModelInfo> {
         val request = authorizedRequestBuilder()
             .get()
-            .url("${toolConfig.hmrServiceHost}/model/data/")
+            .url("${toolConfig.serviceAddress.hmrServiceHost}/model/data/")
             .build()
 
         val result = executeRequestSyncAndExpectSuccess(request, "Listing data models")
@@ -130,7 +131,7 @@ internal class DpmToolClient(
 
         val request = authorizedRequestBuilder()
             .post(requestBody)
-            .url("${toolConfig.exportImportServiceHost}/api/import/db/schedule")
+            .url("${toolConfig.serviceAddress.exportImportServiceHost}/api/import/db/schedule")
             .addHeader("dataModelId", targtDataModelId)
             .build()
 
@@ -143,7 +144,7 @@ internal class DpmToolClient(
     ): TaskStatusInfo {
         val request = authorizedRequestBuilder()
             .get()
-            .url("${toolConfig.exportImportServiceHost}/api/task/$taskId/import")
+            .url("${toolConfig.serviceAddress.exportImportServiceHost}/api/task/$taskId/import")
             .addHeader("dataModelVersionId", dataModelVersionId)
             .build()
 

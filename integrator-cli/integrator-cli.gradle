@@ -1,3 +1,6 @@
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
+
 description = 'Stand-alone command line application for executing DPM Tool integration tasks from console'
 
 
@@ -35,7 +38,14 @@ dependencies {
 
 jar {
     manifest {
-        attributes 'Main-Class': 'fi.vm.yti.integrator.cli.MainKt'
+        attributes(
+                'Main-Class'            : 'fi.vm.yti.integrator.cli.MainKt',
+                'Implementation-Version': "0.1.0-SNAPSHOT",
+                'Build-Timestamp'       : DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(OffsetDateTime.now()),
+                'Build-Revision'        : "unknown",
+                'Build-Jdk'             : "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']})",
+                'Build-OS'              : "${System.properties['os.name']} ${System.properties['os.arch']} ${System.properties['os.version']}",
+        )
     }
 }
 
