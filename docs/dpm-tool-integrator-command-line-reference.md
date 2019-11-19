@@ -46,7 +46,10 @@ Identifies the target Data Model for the import operation. _[ModelName]_ must be
 
 `--dpm-tool-config`  _[FileName]_
 
-Selects the configuration file, from where the DPM Tool host addresses etc details are loaded. _[FileName]_ must point to a local configuration file. Optional. If not given, _default-dpm-tool-config.json_ file will be loaded from current working directory. See section _4. DPM Tool Integrator configuration file structure_ for further reference.
+Selects the configuration file, from where the DPM Tool host addresses etc details are loaded.
+_[FileName]_ must point to a local configuration file.
+Optional. If not given, _default-dpm-tool-config.json_ file will be loaded A) from current working directory or B) from the folder containing application JAR.
+See section _4. DPM Tool Integrator configuration file structure_ for further reference.
 
 `--username`  _[Username]_
 

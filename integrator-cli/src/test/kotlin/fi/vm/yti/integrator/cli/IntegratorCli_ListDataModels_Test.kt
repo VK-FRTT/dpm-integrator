@@ -21,7 +21,8 @@ internal class IntegratorCli_ListDataModels_Test : IntegratorCli_TestBase(
             assertThat(errText).contains(
                 "Error:",
                 "- username: missing required parameter value",
-                "- dpm-tool-config (default configuration): file not found (", "default-dpm-tool-config.json)" )
+                "- DPM Tool default configuration: file not found", "default-dpm-tool-config.json"
+            )
         }
     }
 }
