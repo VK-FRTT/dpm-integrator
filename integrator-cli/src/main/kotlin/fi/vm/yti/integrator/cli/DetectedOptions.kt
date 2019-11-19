@@ -1,5 +1,6 @@
 package fi.vm.yti.integrator.cli
 
+import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -103,41 +104,57 @@ data class DetectedOptions(
         } else {
             val defaultFileName = "default-dpm-tool-config.json"
 
-            val currentDirConfigPath = resolveCurrentDirConfig(defaultFileName)
+            val currentDirConfigPath = resolveCurrentDirConfigPath(defaultFileName)
 
             if (Files.exists(currentDirConfigPath)) {
                 return currentDirConfigPath
             }
 
-            val jarDirConfigPath = resolveJarDirConfig(defaultFileName)
+            val jarDirConfigPath = tryResolveJarDirConfigPath(defaultFileName)
 
-            if (Files.exists(jarDirConfigPath)) {
+            if (jarDirConfigPath != null && Files.exists(jarDirConfigPath)) {
                 return jarDirConfigPath
             }
 
             validationResults.add(
                 "DPM Tool default configuration",
                 "file not found",
-                listOf(currentDirConfigPath, jarDirConfigPath)
+                listOfNotNull(currentDirConfigPath, jarDirConfigPath)
             )
 
             return Paths.get("")
         }
     }
 
-    private fun resolveCurrentDirConfig(confFileName: String): Path {
+    private fun resolveCurrentDirConfigPath(confFileName: String): Path {
         val currentDir = Paths.get("")
         return currentDir.resolve(confFileName).toAbsolutePath()
     }
 
-    private fun resolveJarDirConfig(confFileName: String): Path {
-        val jarPathComponent = this.javaClass.protectionDomain.codeSource.location.toURI().path
-        jarPathComponent ?: throwFail("DPM Tool default configuration lookup failed: Null JAR path")
+    private val jarPathPattern =
+        """
+            \A
+            jar:file:
+            (?<jarPath>[^!]+)
+            !.+
+            \z
+        """.trimIndent().toRegex(RegexOption.COMMENTS)
 
-        val jarDirPath = Paths.get(jarPathComponent).parent
-        jarDirPath ?: throwFail("DPM Tool default configuration lookup failed: Null JAR parent path")
+    private fun tryResolveJarDirConfigPath(confFileName: String): Path? {
+        val selfResourceName = "/${javaClass.name.replace('.', '/')}.class"
+        val selfResourceUrl = javaClass.getResource(selfResourceName)
 
-        return jarDirPath.resolve(confFileName).toAbsolutePath()
+        val jarPathMatch = jarPathPattern.matchEntire(selfResourceUrl.toString())
+        jarPathMatch ?: return null
+
+        val rawJarPath = (jarPathMatch.groups as MatchNamedGroupCollection)["jarPath"]?.value
+        rawJarPath ?: return null
+
+        val normalizedJarPath = File(rawJarPath).toPath().toAbsolutePath()
+
+        val jarDirPath = normalizedJarPath.parent
+
+        return jarDirPath.resolve(confFileName)
     }
 
     private fun requireNonNullOptionValue(

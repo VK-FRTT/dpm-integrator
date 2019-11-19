@@ -13,7 +13,7 @@ ext {
 
 
     libs = [
-            kotlinStdLib:           "org.jetbrains.kotlin:kotlin-stdlib:$versions.kotlin",
+            kotlinStdLib:            "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$versions.kotlin",
             kotlinReflect:          "org.jetbrains.kotlin:kotlin-reflect:$versions.kotlin",
 
             joptSimple:             "net.sf.jopt-simple:jopt-simple:$versions.joptSimple",
