@@ -22,7 +22,7 @@ internal class IntegratorCli_ImportDbToExistingModel_Test : IntegratorCli_TestBa
                 "Error:",
                 "- target-data-model: missing required parameter value",
                 "- username: missing required parameter value",
-                "- DPM Tool default configuration: file not found", "default-dpm-tool-config.json"
+                "- DPM Tool default configuration: file not found", "dpm-integrator-config.json"
             )
         }
     }

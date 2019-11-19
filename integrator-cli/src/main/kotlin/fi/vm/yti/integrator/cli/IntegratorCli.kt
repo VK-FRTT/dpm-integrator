@@ -86,7 +86,7 @@ internal class IntegratorCli(
         val listParams = detectedOptions.validListDataModelsParams()
         val toolConfig = loadToolConfig(listParams.dpmToolConfigPath)
 
-        outWriter.println("Listing data models from: ${toolConfig.dpmToolName}")
+        outWriter.println("Listing data models from: ${toolConfig.dpmToolName} (config: ${listParams.dpmToolConfigPath})")
         outWriter.println("")
 
         val client = DpmToolClient(

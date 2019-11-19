@@ -102,7 +102,7 @@ data class DetectedOptions(
             }
             return dpmToolConfig.toAbsolutePath()
         } else {
-            val defaultFileName = "default-dpm-tool-config.json"
+            val defaultFileName = "dpm-integrator-config.json"
 
             val currentDirConfigPath = resolveCurrentDirConfigPath(defaultFileName)
 
