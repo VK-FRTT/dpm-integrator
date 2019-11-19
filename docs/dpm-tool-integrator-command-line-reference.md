@@ -10,16 +10,17 @@ Command line utility supports following operations:
 - Importing new Model Version to existing Data Model on the DPM Tool from the local database
  
 
- <br>
+<br/>
 
 ### 1.1 Revision history
 
 | Revision | Date       | Author(s) | Description                                                |
 | -------- | ---------- | --------- | ---------------------------------------------------------- |
 | 0.1      | 2019-09-10 | HE        | Initial help content for DPM Tool Integrator 0.1.0 version |
+| 0.2      | 2019-11-19 | HE        | Support for password prompt                                |
 |          |            |           |                                                            |
 
- <br>
+<br/>
 
 ## 2. Command line options
 
@@ -45,7 +46,7 @@ Identifies the target Data Model for the import operation. _[ModelName]_ must be
 
 `--dpm-tool-config`  _[FileName]_
 
-Selects the configuration file, from where the DPM Tool host addresses etc details are loaded. _[FileName]_ must point to a local configuration file. See section _4. DPM Tool Integrator configuration file structure_ for further reference.
+Selects the configuration file, from where the DPM Tool host addresses etc details are loaded. _[FileName]_ must point to a local configuration file. Optional. If not given, _default-dpm-tool-config.json_ file will be loaded from current working directory. See section _4. DPM Tool Integrator configuration file structure_ for further reference.
 
 `--username`  _[Username]_
 
@@ -53,9 +54,9 @@ Username for authenticating with the DPM Tool.
 
 `--password`  _[Password]_
 
-Password for authenticating with the DPM Tool. 
+Password for authenticating with the DPM Tool. Optional. If not given, password will be asked later.
 
- <br>
+<br/>
 
 ## 3. Command line examples 
 
@@ -67,27 +68,42 @@ integrator --help
 
 Prints help text about command line options and exit.
 
- <br>
+<br/>
 
-### 3.2 List Data Models available in the DPM Tool
+### 3.2 List Data Models from the DPM Tool
 
 ```
 integrator --list-data-models --username <username> --password <password>
 ```
 
-Lists existing Data Models from the DPM Tool. Given username and password are used in authentication. Loads DPM Tool host addresses etc details from _default-dpm-tool-config.json_ file. 
+Lists existing Data Models from the DPM Tool (`--list-data-models`). Authentication username and password are provided via command line. 
 
- <br>
+<br/>
 
-### 3.3 Import new Model Version to existing Data Model
+
+### 3.3 List Data Models from the DPM Tool and prompt for password
 
 ```
-integrator-cli.jar --import-db-to-existing-model <database_file.db> --target-data-model <taget_model_name> <username> --password <password>
+integrator --list-data-models --username <username>
 ```
 
-Creates new Model Version to existing Data Model (`--import-db-to-existing-model`) by importing Model Version contents from given DPM database file (`<database_file.db>`). Given username and password are used in authentication. Loads DPM Tool host addresses etc details from _default-dpm-tool-config.json_ file.
+Lists existing Data Models from the DPM Tool. Authentication username is taken from command line, password is asked via prompt. 
 
- <br>
+<br/>
+
+
+### 3.4 Import new Model Version to existing Data Model
+
+```
+integrator-cli.jar --import-db-to-existing-model <database_file.db> --target-data-model <taget_model_name> --username <username> --password <password>
+```
+
+Creates new Model Version to existing Data Model (`--import-db-to-existing-model`) by importing Model Version contents from
+given DPM database file (`<database_file.db>`). Model Version is created to target data model (`--target-data-model`) with given (`<taget_model_name>`).
+Note: If data model name contain spaces, remember use quotes around the name in the command line (`"name with multiple words"`).
+Given username and password are used in authentication.
+
+<br/>
 
 ## 4. DPM Tool Integrator configuration file structure
 

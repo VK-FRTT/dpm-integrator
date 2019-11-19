@@ -69,7 +69,7 @@ internal class IntegratorCli(
         } catch (exception: HaltException) {
             INTEGRATOR_CLI_SUCCESS
         } catch (exception: FailException) {
-            errWriter.println("\n ${exception.message}")
+            errWriter.println("\n${exception.message}")
             errWriter.println()
 
             INTEGRATOR_CLI_FAIL
@@ -96,9 +96,12 @@ internal class IntegratorCli(
         )
 
         outWriter.println("Authenticating: ${listParams.username}")
+
+        val password = getOrAskPassword(listParams.password)
+
         client.authenticateSync(
             listParams.username,
-            listParams.password
+            password
         )
 
         outWriter.println("Retrieving data models list")
@@ -128,9 +131,11 @@ internal class IntegratorCli(
         )
 
         outWriter.println("Authenticating: ${importParams.username}")
+        val password = getOrAskPassword(importParams.password)
+
         client.authenticateSync(
             importParams.username,
-            importParams.password
+            password
         )
 
         outWriter.println("Selecting target data model: ${importParams.targetDataModelName}")
@@ -194,5 +199,19 @@ internal class IntegratorCli(
         val input = mapper.readValue<DpmToolConfigInput>(toolConfigPath.toUri().toURL())
 
         return input.toValidConfig()
+    }
+
+    private fun getOrAskPassword(optionPassword: String?): String {
+        if (optionPassword != null) {
+            return optionPassword
+        }
+
+        val console = System.console()
+        console ?: throwFail("No console available for password prompt. Password must be provided via command line parameters.")
+
+        val password = String(console.readPassword("Give password: "))
+        outWriter.println("")
+
+        return password
     }
 }

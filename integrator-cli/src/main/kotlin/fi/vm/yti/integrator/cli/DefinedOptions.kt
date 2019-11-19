@@ -88,7 +88,7 @@ class DefinedOptions {
         password = optionParser
             .accepts(
                 OptName.PASSWORD.nameString,
-                "password for authenticating to the DPM Tool"
+                "password for authenticating to the DPM Tool (optional, password will be asked later if not given as option)"
             )
             .withOptionalArg()
 

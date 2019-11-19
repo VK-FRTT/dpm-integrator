@@ -9,14 +9,14 @@ data class ImportDatabaseParams(
     val targetDataModelName: String,
     val dpmToolConfigPath: Path,
     val username: String,
-    val password: String,
+    val password: String?,
     val verbosity: Verbosity
 )
 
 data class ListDataModelsParams(
     val dpmToolConfigPath: Path,
     val username: String,
-    val password: String,
+    val password: String?,
     val verbosity: Verbosity
 )
 
@@ -58,7 +58,6 @@ data class DetectedOptions(
         requireFileExists(cmdImportDbToExistingModel, OptName.IMPORT_DB_TO_EXISTING, results)
         requireNonNullOptionValue(targetDataModelName, OptName.TARGET_DATA_MODEL_NAME, results)
         requireNonNullOptionValue(username, OptName.USERNAME, results)
-        requireNonNullOptionValue(password, OptName.PASSWORD, results)
 
         results.failOnErrors()
 
@@ -67,7 +66,7 @@ data class DetectedOptions(
             targetDataModelName = targetDataModelName!!,
             dpmToolConfigPath = resolvedToolConfigPath,
             username = username!!,
-            password = password!!,
+            password = password,
             verbosity = verbosity
         )
     }
@@ -79,14 +78,13 @@ data class DetectedOptions(
 
         val resolvedToolConfigPath = resolveValidDpmToolConfigPath(validationResults)
         requireNonNullOptionValue(username, OptName.USERNAME, validationResults)
-        requireNonNullOptionValue(password, OptName.PASSWORD, validationResults)
 
         validationResults.failOnErrors()
 
         return ListDataModelsParams(
             dpmToolConfigPath = resolvedToolConfigPath,
             username = username!!,
-            password = password!!,
+            password = password,
             verbosity = verbosity
         )
     }
